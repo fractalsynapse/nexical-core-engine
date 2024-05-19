@@ -1,0 +1,13 @@
+name: engine
+
+version: 0.0.1
+compatibility: ">=0.13.0,<0.14"
+
+modules:
+    - provider: github
+      remote: fractalsynapse/zimagi-ml
+      reference: main
+
+    - provider: github
+      remote: fractalsynapse/zimagi-portal
+      reference: main
