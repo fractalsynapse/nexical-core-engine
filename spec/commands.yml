@@ -1,0 +1,46 @@
+command_mixins:
+    team_document_collector:
+        class: TeamDocumentCollectorCommandMixin
+        mixins: [ml, portal, team_document]
+
+    team_summary:
+        class: TeamSummaryCommandMixin
+        mixins: [team_document_collector]
+
+command:
+    model:
+        summarize:
+            documents:
+                base: model_user
+                mixins: [ml, team_document_collection]
+                worker_type: ml-summary
+                parse:
+                    - team_document_collection_id
+                    - instruction
+                    - persona
+                    - temperature
+                    - top_p
+                    - repetition_penalty
+                    - max_chunks
+
+    portal:
+        event:
+            team:
+                base: portal_event
+                mixins: [team]
+                worker_type: engine-data
+
+            project:
+                base: portal_event
+                mixins: [team_project]
+                worker_type: engine-data
+
+            document_collection:
+                base: portal_event
+                mixins: [team_document_collector]
+                worker_type: engine-data
+
+            summary:
+                base: portal_event
+                mixins: [team_summary]
+                worker_type: engine-summary

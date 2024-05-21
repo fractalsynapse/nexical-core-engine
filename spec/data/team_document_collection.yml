@@ -1,0 +1,72 @@
+data_mixins:
+  team_document_collection:
+    class: TeamDocumentCollectionMixin
+    fields:
+      team_document_collection:
+        type: '@django.ForeignKey'
+        relation: team_document_collection
+        options:
+          on_delete: '@django.CASCADE'
+  team_document_collection_optional:
+    class: TeamDocumentCollectionOptionalMixin
+    fields:
+      team_document_collection:
+        type: '@django.ForeignKey'
+        relation: team_document_collection
+        options:
+          on_delete: '@django.SET_NULL'
+          'null': true
+  team_document_collections:
+    class: TeamDocumentCollectionMultipleMixin
+    fields:
+      team_document_collections:
+        type: '@django.ManyToManyField'
+        relation: team_document_collection
+        options:
+          blank: true
+data_base:
+  team_document_collection:
+    class: TeamDocumentCollectionBase
+    base: id_resource
+    mixins:
+    - team_document_collection
+    id_fields:
+    - team_document_collection_id
+    - name
+    meta:
+      unique_together:
+      - team_document_collection
+      - name
+      scope: team_document_collection
+data:
+  team_document_collection:
+    class: TeamDocumentCollection
+    base: team
+    id_fields:
+    - team
+    - external_id
+    key: external_id
+    api: true
+    display: '<external_id>: <name>'
+    roles:
+      edit:
+      - data-admin
+      view:
+      - data-auditor
+    fields:
+      external_id:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+    meta:
+      unique_together:
+      - team
+      - external_id
+      ordering:
+      - external_id

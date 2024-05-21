@@ -1,0 +1,101 @@
+data_mixins:
+  team_document:
+    class: TeamDocumentMixin
+    fields:
+      team_document:
+        type: '@django.ForeignKey'
+        relation: team_document
+        options:
+          on_delete: '@django.CASCADE'
+  team_document_optional:
+    class: TeamDocumentOptionalMixin
+    fields:
+      team_document:
+        type: '@django.ForeignKey'
+        relation: team_document
+        options:
+          on_delete: '@django.SET_NULL'
+          'null': true
+  team_documents:
+    class: TeamDocumentMultipleMixin
+    fields:
+      team_documents:
+        type: '@django.ManyToManyField'
+        relation: team_document
+        options:
+          blank: true
+data_base:
+  team_document:
+    class: TeamDocumentBase
+    base: id_resource
+    mixins:
+    - team_document
+    id_fields:
+    - team_document_id
+    - name
+    meta:
+      unique_together:
+      - team_document
+      - name
+      scope: team_document
+data:
+  team_document:
+    class: TeamDocument
+    base: team_document_collection
+    id_fields:
+    - team_document_collection
+    - external_id
+    key: id
+    api: true
+    display: '<id>: <hash>'
+    roles:
+      edit:
+      - data-admin
+      view:
+      - data-auditor
+    fields:
+      text:
+        type: '@django.TextField'
+        options:
+          'null': true
+          default: null
+          editable: true
+          system: false
+      topics:
+        type: '@zimagi.DictionaryField'
+        color: json
+        options:
+          editable: true
+          system: false
+      hash:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 65
+          editable: true
+          primary_key: false
+          system: false
+      sentences:
+        type: '@zimagi.ListField'
+        color: json
+        options:
+          editable: true
+          system: false
+      external_id:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+    meta:
+      unique_together:
+      - team_document_collection
+      - external_id
+      ordering:
+      - id

@@ -1,0 +1,102 @@
+data_mixins:
+  team_project:
+    class: TeamProjectMixin
+    fields:
+      team_project:
+        type: '@django.ForeignKey'
+        relation: team_project
+        options:
+          on_delete: '@django.CASCADE'
+  team_project_optional:
+    class: TeamProjectOptionalMixin
+    fields:
+      team_project:
+        type: '@django.ForeignKey'
+        relation: team_project
+        options:
+          on_delete: '@django.SET_NULL'
+          'null': true
+  team_projects:
+    class: TeamProjectMultipleMixin
+    fields:
+      team_projects:
+        type: '@django.ManyToManyField'
+        relation: team_project
+        options:
+          blank: true
+data_base:
+  team_project:
+    class: TeamProjectBase
+    base: id_resource
+    mixins:
+    - team_project
+    id_fields:
+    - team_project_id
+    - name
+    meta:
+      unique_together:
+      - team_project
+      - name
+      scope: team_project
+data:
+  team_project:
+    class: TeamProject
+    base: team
+    id_fields:
+    - team
+    - external_id
+    key: external_id
+    api: true
+    display: '<external_id>: <name>'
+    roles:
+      edit:
+      - data-admin
+      view:
+      - data-auditor
+    fields:
+      external_id:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+      summary_format:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+      summary_persona:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+      summary_model:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+    meta:
+      unique_together:
+      - team
+      - external_id
+      ordering:
+      - external_id

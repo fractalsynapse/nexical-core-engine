@@ -1,0 +1,4 @@
+plugin:
+    qdrant_collection:
+        providers:
+            team_document:

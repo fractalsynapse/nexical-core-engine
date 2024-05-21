@@ -1,0 +1,9 @@
+command:
+    agent:
+        model:
+            summarizer: null
+
+            mixtral_8x7b:
+                base: agent
+                mixins: [ml]
+                worker_type: ml-summary
