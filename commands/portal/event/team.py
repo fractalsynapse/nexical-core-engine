@@ -11,8 +11,7 @@ class Team(Command('portal.event.team')):
         if event.operation == 'delete':
             self._team.filter(
                 portal_name = self.portal,
-                external_id = event.id,
-                name = event.name
+                external_id = event.id
             ).delete()
 
             self.send('agent:teams:delete', event.export())
