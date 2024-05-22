@@ -76,6 +76,14 @@ data:
           editable: true
           primary_key: false
           system: false
+      top_p:
+        type: '@django.FloatField'
+        options:
+          'null': true
+          default: null
+          editable: true
+          primary_key: false
+          system: false
       summary_model:
         type: '@django.CharField'
         options:
@@ -86,6 +94,14 @@ data:
           editable: true
           primary_key: false
           system: false
+      temperature:
+        type: '@django.FloatField'
+        options:
+          'null': true
+          default: null
+          editable: true
+          primary_key: false
+          system: false
       summary_format:
         type: '@django.CharField'
         options:
@@ -93,6 +109,14 @@ data:
           default: null
           choices: null
           max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+      repetition_penalty:
+        type: '@django.FloatField'
+        options:
+          'null': true
+          default: null
           editable: true
           primary_key: false
           system: false

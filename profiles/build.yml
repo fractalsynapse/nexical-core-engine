@@ -71,3 +71,9 @@ models:
                 type: string
             summary_format:
                 type: string
+            temperature:
+                type: float
+            top_p:
+                type: float
+            repetition_penalty:
+                type: float

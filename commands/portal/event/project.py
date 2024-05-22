@@ -28,6 +28,9 @@ class Project(Command('portal.event.project')):
                 'summary_model': event.summary_model,
                 'summary_persona': event.summary_persona,
                 'summary_format': event.format_prompt,
+                'temperature': event.temperature,
+                'top_p': event.top_p,
+                'repetition_penalty': event.repetition_penalty,
                 'team_document_collections': event.documents
             }, relation_key = True)
 
