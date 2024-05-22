@@ -42,6 +42,8 @@ data:
   team_project:
     class: TeamProject
     base: team
+    mixins:
+    - team_document_collections
     id_fields:
     - team
     - external_id
@@ -64,16 +66,6 @@ data:
           editable: true
           primary_key: false
           system: false
-      summary_format:
-        type: '@django.CharField'
-        options:
-          'null': true
-          default: null
-          choices: null
-          max_length: 256
-          editable: true
-          primary_key: false
-          system: false
       summary_persona:
         type: '@django.CharField'
         options:
@@ -85,6 +77,16 @@ data:
           primary_key: false
           system: false
       summary_model:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+      summary_format:
         type: '@django.CharField'
         options:
           'null': true

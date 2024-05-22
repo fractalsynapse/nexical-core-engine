@@ -7,7 +7,7 @@ command_mixins:
     team_project:
         aliases: ["team_project_optional"]
         class: TeamProjectMixin
-        mixins: ['team']
+        mixins: ['team', 'team_document_collections']
         meta:
             team_project:
                 data: team_project
@@ -15,7 +15,7 @@ command_mixins:
 
     team_projects:
         class: TeamProjectMultipleMixin
-        mixins: ['team']
+        mixins: ['team', 'team_document_collections']
         meta:
             team_projects:
                 data: team_project

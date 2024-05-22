@@ -19,24 +19,6 @@ models:
             external_id:
                 type: string
 
-    team_project:
-        <<: *base_model
-        base: team
-        plural: team_projects
-        id_fields: [team, external_id]
-        key: external_id
-        display: "<external_id>: <name>"
-        priority: 65
-        fields:
-            external_id:
-                type: string
-            summary_model:
-                type: string
-            summary_persona:
-                type: string
-            summary_format:
-                type: string
-
     team_document_collection:
         <<: *base_model
         base: team
@@ -70,3 +52,22 @@ models:
                 type: list
             topics:
                 type: dict
+
+    team_project:
+        <<: *base_model
+        base: team
+        mixins: [team_document_collections]
+        plural: team_projects
+        id_fields: [team, external_id]
+        key: external_id
+        display: "<external_id>: <name>"
+        priority: 65
+        fields:
+            external_id:
+                type: string
+            summary_model:
+                type: string
+            summary_persona:
+                type: string
+            summary_format:
+                type: string

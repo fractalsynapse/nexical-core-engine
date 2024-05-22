@@ -54,19 +54,6 @@ data:
       view:
       - data-auditor
     fields:
-      text:
-        type: '@django.TextField'
-        options:
-          'null': true
-          default: null
-          editable: true
-          system: false
-      topics:
-        type: '@zimagi.DictionaryField'
-        color: json
-        options:
-          editable: true
-          system: false
       hash:
         type: '@django.CharField'
         options:
@@ -92,6 +79,19 @@ data:
           max_length: 256
           editable: true
           primary_key: false
+          system: false
+      topics:
+        type: '@zimagi.DictionaryField'
+        color: json
+        options:
+          editable: true
+          system: false
+      text:
+        type: '@django.TextField'
+        options:
+          'null': true
+          default: null
+          editable: true
           system: false
     meta:
       unique_together:
