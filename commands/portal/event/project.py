@@ -27,7 +27,9 @@ class Project(Command('portal.event.project')):
                 'name': event.name,
                 'summary_model': event.summary_model,
                 'summary_persona': event.summary_persona,
-                'summary_format': event.format_prompt
-            })
+                'summary_format': event.format_prompt,
+                'team_document_collections': event.documents
+            }, relation_key = True)
+
             self.send('agent:projects:update', event.export())
             self.success("Updated project: {}".format(event.id))
