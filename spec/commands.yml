@@ -5,7 +5,7 @@ command_mixins:
 
     team_summary:
         class: TeamSummaryCommandMixin
-        mixins: [team_document_collector]
+        mixins: [team_document_collector, team_project]
 
 command:
     model:

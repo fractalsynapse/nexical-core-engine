@@ -3,12 +3,13 @@ from .base import BaseModelSummarizer
 
 class DocumentSummarizer(BaseModelSummarizer):
 
-    def __init__(self, command, document_collection):
+    def __init__(self, command, document_collection, provider = None):
         super().__init__(
             command,
             document_collection,
-            'team_document_collection',
-            'team_document'
+            text_facade = 'team_document_collection',
+            document_facade = 'team_document',
+            provider = provider
         )
 
         self.document_group_field = 'name'

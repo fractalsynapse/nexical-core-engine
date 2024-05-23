@@ -3,7 +3,7 @@ command:
         model:
             summarizer: null
 
-            mixtral_8x7b:
+            mixtral_di_7bx8:
                 base: agent
                 mixins: [ml]
                 worker_type: ml-summary

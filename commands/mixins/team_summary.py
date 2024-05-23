@@ -5,6 +5,7 @@ from systems.commands.index import CommandMixin
 from systems.summary.text import TextSummarizer
 from systems.summary.document import DocumentSummarizer
 from utility.data import Collection, get_identifier, ensure_list
+from utility.display import print_exception_info
 
 import time
 
@@ -12,14 +13,14 @@ import time
 class TeamSummaryCommandMixin(CommandMixin('team_summary')):
 
     def publish_summary(self, event, portal_name):
-        project = self._team_project.retrieve(event.project_id, team_id = event.team_id)
-        documents = list(self._team_document_collection.filter(external_id__in = event.documents).values_list('id', flat=True))
+        team = self._team.qs.get(portal_name = portal_name, external_id = event.team_id)
+        project = self._team_project.retrieve(event.project_id, team = team)
 
-        summary = self.perform_summary(event.prompt,
-            model = project.summary_model,
-            output_format = project.summary_format,
+        summary = self.perform_summary(project.summary_model,
+            prompt = event.prompt,
+            output_format = "{}. {}.".format(project.summary_format.removesuffix('.'), event.format.removesuffix('.')),
             output_endings = event.endings,
-            documents = documents,
+            documents = list(project.team_document_collections.values_list('id', flat=True)),
             persona = project.summary_persona,
             temperature = project.temperature,
             top_p = project.top_p,
@@ -38,7 +39,7 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
         return summary
 
 
-    def perform_summary(self, prompt, output_format = '', output_endings = None, documents = None, **config):
+    def perform_summary(self, model, prompt, output_format = '', output_endings = None, documents = None, **config):
         start_time = time.time()
         max_chunks = config.pop('max_chunks', 10)
         request_tokens = 0
@@ -61,6 +62,7 @@ Include only the prompt in the response.
 
         def summarize_topic(topic_info):
             return self._summarize_topic(
+                model,
                 prompt,
                 topic_info['prompt'],
                 topic_info['instances'],
@@ -84,7 +86,8 @@ Include only the prompt in the response.
             summaries.extend(topic.result.summaries)
 
         topic_text = "\n\n\n".join([ summary.text for summary in summaries ]) if summaries else ''
-        summary = TextSummarizer(self, topic_text).generate(
+
+        summary = TextSummarizer(self, topic_text, provider = model).generate(
             prompt,
             output_format = output_format,
             output_endings = output_endings,
@@ -99,7 +102,7 @@ Include only the prompt in the response.
         return summary
 
 
-    def _summarize_topic(self, user_prompt, detail_prompt, instances, summarize_method, max_chunks, config):
+    def _summarize_topic(self, model, user_prompt, detail_prompt, instances, summarize_method, max_chunks, config):
         instances = ensure_list(instances) if instances else []
         request_tokens = 0
         response_tokens = 0
@@ -107,13 +110,14 @@ Include only the prompt in the response.
         summaries = []
 
         if instances:
-            research_prompt = TextSummarizer(self, user_prompt).generate(detail_prompt, **config)
+            research_prompt = TextSummarizer(self, user_prompt, provider = model).generate(detail_prompt, **config)
             request_tokens += research_prompt.request_tokens
             response_tokens += research_prompt.response_tokens
 
             summary_results = self.run_list(
                 instances,
                 summarize_method,
+                model,
                 research_prompt.text,
                 max_chunks,
                 config
@@ -133,10 +137,10 @@ Include only the prompt in the response.
         )
 
 
-    def _summarize_documents(self, collection_id, prompt, max_chunks, config):
+    def _summarize_documents(self, collection_id, model, prompt, max_chunks, config):
         document_collection = Model('team_document_collection').facade.retrieve_by_id(collection_id)
         if document_collection:
-            summary = DocumentSummarizer(self, document_collection).generate(
+            summary = DocumentSummarizer(self, document_collection, provider = model).generate(
                 prompt,
                 max_chunks = max_chunks,
                 **config
