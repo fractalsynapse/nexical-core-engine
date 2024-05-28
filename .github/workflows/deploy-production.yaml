@@ -1,0 +1,30 @@
+name: Deploy Zimagi Module
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  module_update:
+    name: "Zimagi Module Update"
+    runs-on: ubuntu-latest
+    environment: Production
+
+    steps:
+      - name: Add / update the Zimagi module
+        uses: zimagi/command@0.11.4
+        with:
+          host: ${{ vars.ZIMAGI_API_HOST }}
+          port: ${{ vars.ZIMAGI_API_PORT }}
+
+          user: ${{ vars.ZIMAGI_API_USER }}
+          token: ${{ secrets.ZIMAGI_API_TOKEN }}
+          encryption_key: ${{ secrets.ZIMAGI_API_ENCRYPTION_KEY }}
+          log_level: DEBUG
+
+          command: module/add
+          options: |
+            module_provider_name: github
+            remote: ${{ github.repository }}
+            module_fields:
+              reference: main
