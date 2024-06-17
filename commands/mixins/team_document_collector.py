@@ -7,13 +7,9 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
 
     def save_document_collection(self, event, portal_name):
         topic_parser = TopicModel()
-        team = self.save_instance(self._team, None, {
-            'portal_name': portal_name,
-            'external_id': event.team_id,
-            'name': event.team_name
-        })
+        team = self._team.qs.get(portal_name = portal_name, external_id = event.team_id)
         document_collection = self.save_instance(self._team_document_collection, None, {
-            'team_id': team.id,
+            'team': team,
             'external_id': event.id,
             'name': event.name
         })
@@ -34,10 +30,11 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
                 document = self.save_instance(self._team_document, None, {
                     'team_document_collection_id': document_collection.id,
                     'external_id': file_info['id'],
+                    'type': 'file',
                     'name': file_info['name'],
                     'hash': file_info['hash'],
                     'text': text,
-                    'sentences': self.parse_sentences(text, validate = False) if text else {}
+                    'sentences': self.parse_sentences(text, validate = False) if text else []
                 })
                 if self._store_document_topics(document, topic_parser):
                     self.data("Document {} topics".format(self.key_color(document.id)), document.topics)
