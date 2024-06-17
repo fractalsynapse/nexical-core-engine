@@ -42,6 +42,10 @@ models:
         fields:
             external_id:
                 type: string
+            type:
+                type: string
+                options:
+                    default: file
             hash:
                 type: string
                 options:
