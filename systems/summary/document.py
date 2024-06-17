@@ -11,9 +11,8 @@ class DocumentSummarizer(BaseModelSummarizer):
             document_facade = 'team_document',
             provider = provider
         )
-
+        self.document_id_field = 'team_document_collection_id'
         self.document_group_field = 'name'
 
         self.embedding_collection = 'team_document'
-        self.embedding_id_field = 'collection_id'
-        self.embedding_group_field = 'document_id'
+        self.embedding_id_field = 'document_id'
