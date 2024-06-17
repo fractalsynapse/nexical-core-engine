@@ -3,26 +3,15 @@ command_mixins:
         class: TeamDocumentCollectorCommandMixin
         mixins: [ml, portal, team_document]
 
+    team_note:
+        class: TeamNoteCommandMixin
+        mixins: [team_document_collector, team_project]
+
     team_summary:
         class: TeamSummaryCommandMixin
         mixins: [team_document_collector, team_project]
 
 command:
-    model:
-        summarize:
-            documents:
-                base: model_user
-                mixins: [ml, team_document_collection]
-                worker_type: ml-summary
-                parse:
-                    - team_document_collection_id
-                    - instruction
-                    - persona
-                    - temperature
-                    - top_p
-                    - repetition_penalty
-                    - max_chunks
-
     portal:
         event:
             team:
@@ -32,12 +21,17 @@ command:
 
             project:
                 base: portal_event
-                mixins: [team_project]
+                mixins: [team_document_collector, team_project]
                 worker_type: engine-data
 
             document_collection:
                 base: portal_event
                 mixins: [team_document_collector]
+                worker_type: engine-data
+
+            note:
+                base: portal_event
+                mixins: [team_note]
                 worker_type: engine-data
 
             summary:
