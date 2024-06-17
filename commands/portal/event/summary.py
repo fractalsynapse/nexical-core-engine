@@ -8,7 +8,11 @@ class Summary(Command('portal.event.summary')):
         self.event_wrapper(self._perform_summary)
 
     def _perform_summary(self, event):
-        if event.operation != 'delete':
+        if event.operation == 'delete':
+            self.delete_summary(event, self.portal)
+            self.send('agent:summarizer:delete', event.export())
+            self.success("Successfully deleted summary: {}".format(event.id))
+        else:
             summary = self.publish_summary(event, self.portal)
             self.send('agent:summarizer:summary', summary.export())
             self.success('Completed summary processing request successfully')
