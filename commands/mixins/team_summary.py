@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 from django.conf import settings
 
 from systems.models.index import Model
@@ -5,7 +6,7 @@ from systems.commands.index import CommandMixin
 from systems.summary.text import TextSummarizer
 from systems.summary.document import DocumentSummarizer
 from utility.data import Collection, get_identifier, ensure_list
-from utility.display import print_exception_info
+from utility.topics import TopicModel
 
 import time
 
@@ -13,10 +14,11 @@ import time
 class TeamSummaryCommandMixin(CommandMixin('team_summary')):
 
     def publish_summary(self, event, portal_name):
+        topic_parser = TopicModel()
         team = self._team.qs.get(portal_name = portal_name, external_id = event.team_id)
         project = self._team_project.retrieve(event.project_id, team = team)
 
-        summary = self.perform_summary(project.summary_model,
+        summary = self._generate_summary(project.summary_model,
             prompt = event.prompt,
             output_format = "{}. {}.".format(project.summary_format.removesuffix('.'), event.format.removesuffix('.')),
             output_endings = event.endings,
@@ -24,8 +26,31 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
             persona = project.summary_persona,
             temperature = project.temperature,
             top_p = project.top_p,
-            repetition_penalty = project.repetition_penalty
+            repetition_penalty = project.repetition_penalty,
+            max_chunks = event.max_sections,
+            sentence_limit = event.sentence_limit
         )
+
+        summary_text = BeautifulSoup(summary.text or '', 'html.parser').get_text()
+        document_collection = self.save_instance(self._team_document_collection, None, {
+            'team': team,
+            'external_id': get_identifier("summary-{}".format(event.project_id)),
+            'name': "{} Research Summaries".format(project.name)
+        })
+        document = self.save_instance(self._team_document, None, {
+            'team_document_collection': document_collection,
+            'external_id': event.id,
+            'type': 'summary',
+            'name': event.name if event.name else ((event.prompt[:250] + '...') if len(event.prompt) > 250 else event.prompt),
+            'hash': get_identifier(summary_text),
+            'text': summary_text,
+            'sentences': self.parse_sentences(summary_text, validate = False) if summary_text else []
+        })
+        if self._store_document_topics(document, topic_parser):
+            self.data("Document {} topics".format(self.key_color(document.id)), document.topics)
+
+        self._store_document_embeddings(document, topic_parser)
+
         self.portal_update(portal_name,
             'summary',
             id = event.id,
@@ -39,9 +64,23 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
         return summary
 
 
-    def perform_summary(self, model, prompt, output_format = '', output_endings = None, documents = None, **config):
+    def delete_summary(self, event, portal_name):
+        team = self._team.qs.get(portal_name = portal_name, external_id = event.team_id)
+        document_collection = self._team_document_collection.retrieve(
+            get_identifier("summary-{}".format(event.project_id)),
+            team = team
+        )
+        if document_collection:
+            self._team_document.filter(
+                external_id = event.id,
+                team_document_collection = document_collection
+            ).delete()
+
+
+    def _generate_summary(self, model, prompt, output_format = '', output_endings = None, documents = None, **config):
         start_time = time.time()
         max_chunks = config.pop('max_chunks', 10)
+        sentence_limit = config.pop('sentence_limit', 50)
         request_tokens = 0
         response_tokens = 0
         included_documents = {}
@@ -68,6 +107,7 @@ Include only the prompt in the response.
                 topic_info['instances'],
                 topic_info['method'],
                 max_chunks,
+                sentence_limit,
                 config
             )
 
@@ -77,11 +117,14 @@ Include only the prompt in the response.
             response_tokens += topic.result.response_tokens
 
             for summary in topic.result.summaries:
-                for identifier, document in summary.documents.items():
+                for identifier, document_info in summary.documents.items():
+                    score = document_info['score']
+                    document = document_info['document']
+
                     included_documents[identifier] = {
-                        'score': float(identifier.split(':')[0]),
-                        'type': document.facade.meta.data_name,
-                        'document_id': document.external_id if document.facade.meta.data_name == 'team_document' else document.id
+                        'score': float(score),
+                        'type': document.type,
+                        'document_id': document.external_id
                     }
             summaries.extend(topic.result.summaries)
 
@@ -102,7 +145,7 @@ Include only the prompt in the response.
         return summary
 
 
-    def _summarize_topic(self, model, user_prompt, detail_prompt, instances, summarize_method, max_chunks, config):
+    def _summarize_topic(self, model, user_prompt, detail_prompt, instances, summarize_method, max_chunks, sentence_limit, config):
         instances = ensure_list(instances) if instances else []
         request_tokens = 0
         response_tokens = 0
@@ -119,7 +162,9 @@ Include only the prompt in the response.
                 summarize_method,
                 model,
                 research_prompt.text,
+                user_prompt,
                 max_chunks,
+                sentence_limit,
                 config
             )
             for summary in summary_results.data:
@@ -137,12 +182,14 @@ Include only the prompt in the response.
         )
 
 
-    def _summarize_documents(self, collection_id, model, prompt, max_chunks, config):
+    def _summarize_documents(self, collection_id, model, prompt, user_prompt, max_chunks, sentence_limit, config):
         document_collection = Model('team_document_collection').facade.retrieve_by_id(collection_id)
         if document_collection:
             summary = DocumentSummarizer(self, document_collection, provider = model).generate(
                 prompt,
+                user_prompt = user_prompt,
                 max_chunks = max_chunks,
+                sentence_limit = sentence_limit,
                 **config
             )
             summary.text = """
