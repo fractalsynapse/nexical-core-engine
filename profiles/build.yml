@@ -30,6 +30,9 @@ models:
         fields:
             external_id:
                 type: string
+            description:
+                type: text
+
 
     team_document:
         <<: *base_model
@@ -46,6 +49,8 @@ models:
                 type: string
                 options:
                     default: file
+            description:
+                type: text
             hash:
                 type: string
                 options:

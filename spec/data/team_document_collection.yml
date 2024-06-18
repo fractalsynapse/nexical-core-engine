@@ -64,6 +64,13 @@ data:
           editable: true
           primary_key: false
           system: false
+      description:
+        type: '@django.TextField'
+        options:
+          'null': true
+          default: null
+          editable: true
+          system: false
     meta:
       unique_together:
       - team
