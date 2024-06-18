@@ -11,7 +11,8 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
         document_collection = self.save_instance(self._team_document_collection, None, {
             'team': team,
             'external_id': event.id,
-            'name': event.name
+            'name': event.name,
+            'description': event.description
         })
         document_index = {}
 
@@ -21,17 +22,18 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
         def save_document(file_info):
             document_index.pop(file_info['hash'], None)
 
-            document = self._team_document.filter(
+            documents = self._team_document.filter(
                 team_document_collection = document_collection,
-                hash = file_info['hash']
+                external_id = file_info['id']
             )
-            if not document:
+            if not documents:
                 text = self.parse_file_text(portal_name, 'document', file_info['id'])
                 document = self.save_instance(self._team_document, None, {
                     'team_document_collection_id': document_collection.id,
                     'external_id': file_info['id'],
                     'type': 'file',
                     'name': file_info['name'],
+                    'description': file_info['description'],
                     'hash': file_info['hash'],
                     'text': text,
                     'sentences': self.parse_sentences(text, validate = False) if text else []
@@ -40,6 +42,21 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
                     self.data("Document {} topics".format(self.key_color(document.id)), document.topics)
 
                 self._store_document_embeddings(document, topic_parser)
+            else:
+                document = documents.first()
+                document.name = file_info['name']
+                document.description = file_info['description']
+                document.save()
+
+                if document.hash != file_info['hash']:
+                    document.text = self.parse_file_text(portal_name, 'document', file_info['id'])
+                    document.sentences = self.parse_sentences(document.text, validate = False) if document.text else []
+                    document.save()
+
+                    if self._store_document_topics(document, topic_parser):
+                        self.data("Document {} topics".format(self.key_color(document.id)), document.topics)
+
+                    self._store_document_embeddings(document, topic_parser)
 
         self.run_list(event.get('files', []), save_document)
         if document_index:
