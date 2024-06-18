@@ -128,7 +128,9 @@ Include only the prompt in the response.
                     }
             summaries.extend(topic.result.summaries)
 
-        topic_text = "\n\n\n".join([ summary.text for summary in summaries ]) if summaries else ''
+        topic_text = "\n\n\n".join([ summary.text for summary in summaries ]).strip() if summaries else ''
+        if not topic_text and documents:
+            topic_text = None
 
         summary = TextSummarizer(self, topic_text, provider = model).generate(
             prompt,
@@ -192,13 +194,17 @@ Include only the prompt in the response.
                 sentence_limit = sentence_limit,
                 **config
             )
-            summary.text = """
-The following is a description of the document collection: {}
+            if summary.text:
+                summary.text = """
+The following is information from the document collection '{}'{}
+
+Use this information exclusively for summarization and answering questions:
 
 {}
 """.format(
-                document_collection.name,
-                summary.text
-            )
+                    document_collection.name,
+                    " with the description: {}.".format(document_collection.description.strip('.!?')) if document_collection.description else '.',
+                    summary.text
+                )
             return summary
         return None
