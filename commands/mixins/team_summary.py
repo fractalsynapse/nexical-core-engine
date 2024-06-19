@@ -129,7 +129,7 @@ Include only the prompt in the response.
             summaries.extend(topic.result.summaries)
 
         topic_text = "\n\n\n".join([ summary.text for summary in summaries ]).strip() if summaries else ''
-        if not topic_text and documents:
+        if not topic_text and documents and len(documents) > 2:
             topic_text = None
 
         summary = TextSummarizer(self, topic_text, provider = model).generate(
