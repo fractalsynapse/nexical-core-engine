@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Add / update the Zimagi module
-        uses: zimagi/command@0.11.4
+        uses: zimagi/command@0.13.6
         with:
           host: ${{ vars.ZIMAGI_API_HOST }}
           port: ${{ vars.ZIMAGI_API_PORT }}
