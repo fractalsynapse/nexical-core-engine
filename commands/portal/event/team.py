@@ -16,3 +16,11 @@ class Team(Command('portal.event.team')):
 
             self.send('agent:teams:delete', event.export())
             self.success("Successfully deleted team: {}".format(event.id))
+        else:
+            self.save_instance(self._team, None, {
+                'portal_name': self.portal,
+                'external_id': event.id,
+                'name': event.name
+            })
+            self.send('agent:teams:update', event.export())
+            self.success("Successfully updated team: {}".format(event.id))
