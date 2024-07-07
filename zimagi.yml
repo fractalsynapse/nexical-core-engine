@@ -11,3 +11,7 @@ modules:
     - provider: github
       remote: fractalsynapse/zimagi-portal
       reference: main
+
+    - provider: github
+      remote: fractalsynapse/zimagi-browser
+      reference: main
