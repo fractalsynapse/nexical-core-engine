@@ -78,8 +78,8 @@ data:
           default: null
           editable: true
           system: false
-      topics:
-        type: '@zimagi.DictionaryField'
+      sentences:
+        type: '@zimagi.ListField'
         color: json
         options:
           editable: true
@@ -104,8 +104,8 @@ data:
           editable: true
           primary_key: false
           system: false
-      sentences:
-        type: '@zimagi.ListField'
+      topics:
+        type: '@zimagi.DictionaryField'
         color: json
         options:
           editable: true

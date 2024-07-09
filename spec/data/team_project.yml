@@ -89,11 +89,32 @@ data:
           editable: true
           primary_key: false
           system: false
+      team_projects:
+        type: '@django.ManyToManyField'
+        relation: team_project
+        color: relation
+        options:
+          blank: true
+          related_name: +
       summary_format:
         type: '@django.TextField'
         options:
           'null': true
           default: null
+          editable: true
+          system: false
+      top_p:
+        type: '@django.FloatField'
+        options:
+          'null': true
+          default: null
+          editable: true
+          primary_key: false
+          system: false
+      access_teams:
+        type: '@zimagi.ListField'
+        color: json
+        options:
           editable: true
           system: false
       summary_model:
@@ -103,14 +124,6 @@ data:
           default: null
           choices: null
           max_length: 256
-          editable: true
-          primary_key: false
-          system: false
-      top_p:
-        type: '@django.FloatField'
-        options:
-          'null': true
-          default: null
           editable: true
           primary_key: false
           system: false

@@ -1,6 +1,7 @@
 from systems.commands.index import CommandMixin
 from utility.data import get_identifier
 from utility.topics import TopicModel
+from utility.crawler import WebCrawler
 
 
 class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector')):
@@ -12,7 +13,8 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
             'team': team,
             'external_id': event.id,
             'name': event.name,
-            'description': event.description
+            'description': event.description,
+            'access_teams': event.access_teams
         })
         document_index = {}
 
@@ -58,7 +60,55 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
 
                     self._store_document_embeddings(document, topic_parser)
 
+        def save_bookmark(bookmark_info):
+            web = WebCrawler(self, max_depth = 0)
+            web.fetch(bookmark_info['url'])
+            if not web.pages:
+                return
+
+            url = list(web.pages.keys())[0]
+            title = web.titles[url]
+            text = web.pages[url]
+            hash_value = get_identifier(text)
+            document_index.pop(hash_value, None)
+
+            documents = self._team_document.filter(
+                team_document_collection = document_collection,
+                external_id = bookmark_info['id']
+            )
+            if not documents:
+                document = self.save_instance(self._team_document, None, {
+                    'team_document_collection_id': document_collection.id,
+                    'external_id': bookmark_info['id'],
+                    'type': 'bookmark',
+                    'name': title,
+                    'description': "{} From URL: {}".format(bookmark_info['description'], url).strip(),
+                    'hash': hash_value,
+                    'text': text,
+                    'sentences': self.parse_sentences(text, validate = False) if text else []
+                })
+                if self._store_document_topics(document, topic_parser):
+                    self.data("Bookmark {} topics".format(self.key_color(document.id)), document.topics)
+
+                self._store_document_embeddings(document, topic_parser)
+            else:
+                document = documents.first()
+                document.name = title
+                document.description = "{} From URL: {}".format(bookmark_info['description'], url).strip()
+                document.save()
+
+                if document.hash != hash_value:
+                    document.text = text
+                    document.sentences = self.parse_sentences(document.text, validate = False) if document.text else []
+                    document.save()
+
+                    if self._store_document_topics(document, topic_parser):
+                        self.data("Bookmark {} topics".format(self.key_color(document.id)), document.topics)
+
+                    self._store_document_embeddings(document, topic_parser)
+
         self.run_list(event.get('files', []), save_document)
+        self.run_list(event.get('bookmarks', []), save_bookmark)
         if document_index:
             for document in self._team_document.filter(
                 team_document_collection = document_collection,

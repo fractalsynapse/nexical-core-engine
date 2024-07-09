@@ -71,6 +71,12 @@ data:
           default: null
           editable: true
           system: false
+      access_teams:
+        type: '@zimagi.ListField'
+        color: json
+        options:
+          editable: true
+          system: false
     meta:
       unique_together:
       - team

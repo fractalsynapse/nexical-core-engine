@@ -1,7 +1,7 @@
 command_mixins:
     team_document_collector:
         class: TeamDocumentCollectorCommandMixin
-        mixins: [ml, portal, team_document]
+        mixins: [browser, ml, portal, team_document]
 
     team_note:
         class: TeamNoteCommandMixin

@@ -32,7 +32,8 @@ models:
                 type: string
             description:
                 type: text
-
+            access_teams:
+                type: list
 
     team_document:
         <<: *base_model
@@ -86,3 +87,10 @@ models:
                 type: float
             repetition_penalty:
                 type: float
+            access_teams:
+                type: list
+            team_projects:
+                type: many_to_many
+                options:
+                    related_data_name: team_project
+                    reverse_related_name: "+"

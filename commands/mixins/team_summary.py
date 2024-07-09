@@ -22,7 +22,7 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
             prompt = event.prompt,
             output_format = "{}. {}.".format(project.summary_format.removesuffix('.'), event.format.removesuffix('.')),
             output_endings = event.endings,
-            documents = list(project.team_document_collections.values_list('id', flat=True)),
+            documents = self._get_summary_documents(project),
             persona = project.summary_persona,
             temperature = project.temperature,
             top_p = project.top_p,
@@ -75,6 +75,17 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
                 external_id = event.id,
                 team_document_collection = document_collection
             ).delete()
+
+
+    def _get_summary_documents(self, project):
+        def _get_documents(inner_project, processed_ids):
+            documents = list(inner_project.team_document_collections.values_list('id', flat = True))
+            for sub_project in inner_project.team_projects.all():
+                if sub_project.id not in processed_ids:
+                    processed_ids.append(sub_project.id)
+                    documents.extend(_get_documents(sub_project, processed_ids))
+            return documents
+        return list(set(_get_documents(project, [])))
 
 
     def _generate_summary(self, model, prompt, output_format = '', output_endings = None, documents = None, **config):

@@ -29,6 +29,8 @@ class Project(Command('portal.event.project')):
             self.success("Successfully deleted project: {}".format(event.id))
         else:
             documents = event.documents if event.documents else []
+            projects = event.projects if event.projects else []
+            access_teams = event.access_teams if event.access_teams else []
 
             team = self.save_instance(self._team, None, {
                 'portal_name': self.portal,
@@ -46,7 +48,7 @@ class Project(Command('portal.event.project')):
                 'name': summary_collection_name
             })
 
-            self.save_instance(self._team_project, event.id, {
+            instance = self.save_instance(self._team_project, event.id, {
                 'team': team,
                 'name': event.name,
                 'summary_model': event.summary_model,
@@ -55,11 +57,21 @@ class Project(Command('portal.event.project')):
                 'temperature': event.temperature,
                 'top_p': event.top_p,
                 'repetition_penalty': event.repetition_penalty,
-                'team_document_collections': documents + [
+                'team_document_collections': [
                     note_collection.external_id,
                     summary_collection.external_id
-                ]
+                ],
+                'team_projects': None,
+                'access_teams': access_teams
             }, relation_key = True)
+
+            for document_collection in self.facade('team_document_collection', False).filter(external_id__in = documents):
+                instance.team_document_collections.add(document_collection)
+                self.success("Successfully added document collection: {}".format(document_collection.id))
+
+            for project in self.facade('team_project', False).filter(external_id__in = projects):
+                instance.team_projects.add(project)
+                self.success("Successfully added project: {}".format(project.id))
 
             self.send('agent:projects:update', event.export())
             self.success("Updated project: {}".format(event.id))
