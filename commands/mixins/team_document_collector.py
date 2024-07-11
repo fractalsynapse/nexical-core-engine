@@ -14,7 +14,7 @@ class TeamDocumentCollectorCommandMixin(CommandMixin('team_document_collector'))
             'external_id': event.id,
             'name': event.name,
             'description': event.description,
-            'access_teams': event.access_teams
+            'access_teams': event.access_teams or []
         })
         document_index = {}
 
