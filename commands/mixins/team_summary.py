@@ -18,9 +18,14 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
         team = self._team.qs.get(portal_name = portal_name, external_id = event.team_id)
         project = self._team_project.retrieve(event.project_id, team = team)
 
+        if event.use_default_format:
+            output_format = "{}. {}.".format(project.summary_format.removesuffix('.'), event.format.removesuffix('.'))
+        else:
+            output_format = event.format
+
         summary = self._generate_summary(project.summary_model,
             prompt = event.prompt,
-            output_format = "{}. {}.".format(project.summary_format.removesuffix('.'), event.format.removesuffix('.')),
+            output_format = output_format,
             output_endings = event.endings,
             documents = self._get_summary_documents(project),
             persona = project.summary_persona,
