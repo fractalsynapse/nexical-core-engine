@@ -23,6 +23,12 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
         else:
             output_format = event.format
 
+        if self.debug:
+            self.info('======================')
+            self.data('Team', team)
+            self.data('Project', project)
+            self.data('Output Format', output_format)
+
         summary = self._generate_summary(project.summary_model,
             prompt = event.prompt,
             output_format = output_format,
@@ -76,10 +82,12 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
             team = team
         )
         if document_collection:
-            self._team_document.filter(
+            for document in self._team_document.filter(
                 external_id = event.id,
                 team_document_collection = document_collection
-            ).delete()
+            ):
+                self._remove_document_embeddings(document)
+                document.delete()
 
 
     def _get_summary_documents(self, project):
@@ -115,6 +123,9 @@ Include only the prompt in the response.
             }
         ]
 
+        if self.debug:
+            self.data('Summary Documents', documents)
+
         def summarize_topic(topic_info):
             return self._summarize_topic(
                 model,
@@ -147,6 +158,10 @@ Include only the prompt in the response.
         topic_text = "\n\n\n".join([ summary.text for summary in summaries ]).strip() if summaries else ''
         if not topic_text and documents and len(documents) > 2:
             topic_text = None
+
+        if self.debug:
+            self.data('Summary Topic Text', topic_text)
+            self.data('Summary Included Documents', included_documents)
 
         summary = TextSummarizer(self, topic_text, provider = model).generate(
             prompt,

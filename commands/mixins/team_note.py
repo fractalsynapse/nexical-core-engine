@@ -36,7 +36,9 @@ class TeamNoteCommandMixin(CommandMixin('team_note')):
             team = team
         )
         if document_collection:
-            self._team_document.filter(
+            for document in self._team_document.filter(
                 external_id = event.id,
                 team_document_collection = document_collection
-            ).delete()
+            ):
+                self._remove_document_embeddings(document)
+                document.delete()
