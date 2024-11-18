@@ -15,30 +15,17 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
 
     def publish_summary(self, event, portal_name):
         topic_parser = TopicModel()
+
         team = self._team.qs.get(portal_name = portal_name, external_id = event.team_id)
         project = self._team_project.retrieve(event.project_id, team = team)
 
-        if event.use_default_format:
-            output_format = "{}. {}.".format(project.summary_format.removesuffix('.'), event.format.removesuffix('.'))
-        else:
-            output_format = event.format
-
-        if self.debug:
-            self.info('======================')
-            self.data('Team', team)
-            self.data('Project', project)
-            self.data('Output Format', output_format)
-
-        summary = self._generate_summary(project.summary_model,
-            prompt = event.prompt,
-            output_format = output_format,
+        summary = self.generate_project_summary(
+            project,
+            event.prompt,
+            use_default_format = event.use_default_format,
+            output_format = event.format,
             output_endings = event.endings,
-            documents = self._get_summary_documents(project),
-            persona = project.summary_persona,
-            temperature = project.temperature,
-            top_p = project.top_p,
-            repetition_penalty = project.repetition_penalty,
-            max_chunks = event.max_sections,
+            max_sections = event.max_sections,
             sentence_limit = event.sentence_limit
         )
 
@@ -90,21 +77,24 @@ class TeamSummaryCommandMixin(CommandMixin('team_summary')):
                 document.delete()
 
 
-    def _get_summary_documents(self, project):
-        def _get_documents(inner_project, processed_ids):
-            documents = list(inner_project.team_document_collections.values_list('id', flat = True))
-            for sub_project in inner_project.team_projects.all():
-                if sub_project.id not in processed_ids:
-                    processed_ids.append(sub_project.id)
-                    documents.extend(_get_documents(sub_project, processed_ids))
-            return documents
-        return list(set(_get_documents(project, [])))
-
-
-    def _generate_summary(self, model, prompt, output_format = '', output_endings = None, documents = None, **config):
+    def generate_project_summary(self,
+        project,
+        prompt,
+        use_default_format = True,
+        output_format = '',
+        output_endings = [],
+        max_sections = 10,
+        sentence_limit = 100
+    ):
         start_time = time.time()
-        max_chunks = config.pop('max_chunks', 10)
-        sentence_limit = config.pop('sentence_limit', 50)
+        documents = self._get_summary_documents(project)
+        config = {
+            'persona': project.summary_persona,
+            'temperature': project.temperature,
+            'top_p': project.top_p,
+            'repetition_penalty': project.repetition_penalty,
+        }
+
         request_tokens = 0
         response_tokens = 0
         included_documents = {}
@@ -123,17 +113,24 @@ Include only the prompt in the response.
             }
         ]
 
+        if use_default_format:
+            output_format = "{}. {}".format(project.summary_format.removesuffix('.'), output_format.removesuffix('.'))
+
         if self.debug:
+            self.info('======================')
+            self.data('Team', project.team)
+            self.data('Project', project)
+            self.data('Output Format', output_format)
             self.data('Summary Documents', documents)
 
         def summarize_topic(topic_info):
             return self._summarize_topic(
-                model,
+                project.summary_model,
                 prompt,
                 topic_info['prompt'],
                 topic_info['instances'],
                 topic_info['method'],
-                max_chunks,
+                max_sections,
                 sentence_limit,
                 config
             )
@@ -163,7 +160,7 @@ Include only the prompt in the response.
             self.data('Summary Topic Text', topic_text)
             self.data('Summary Included Documents', included_documents)
 
-        summary = TextSummarizer(self, topic_text, provider = model).generate(
+        summary = TextSummarizer(self, topic_text, provider = project.summary_model).generate(
             prompt,
             output_format = output_format,
             output_endings = output_endings,
@@ -239,3 +236,14 @@ Use this information exclusively for summarization and answering questions:
                 )
             return summary
         return None
+
+
+    def _get_summary_documents(self, project):
+        def _get_documents(inner_project, processed_ids):
+            documents = list(inner_project.team_document_collections.values_list('id', flat = True))
+            for sub_project in inner_project.team_projects.all():
+                if sub_project.id not in processed_ids:
+                    processed_ids.append(sub_project.id)
+                    documents.extend(_get_documents(sub_project, processed_ids))
+            return documents
+        return list(set(_get_documents(project, [])))
