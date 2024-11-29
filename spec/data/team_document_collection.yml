@@ -64,17 +64,17 @@ data:
           editable: true
           primary_key: false
           system: false
+      access_teams:
+        type: '@zimagi.ListField'
+        color: json
+        options:
+          editable: true
+          system: false
       description:
         type: '@django.TextField'
         options:
           'null': true
           default: null
-          editable: true
-          system: false
-      access_teams:
-        type: '@zimagi.ListField'
-        color: json
-        options:
           editable: true
           system: false
     meta:

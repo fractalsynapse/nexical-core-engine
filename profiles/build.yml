@@ -77,6 +77,10 @@ models:
                 type: string
             summary_model:
                 type: string
+            summary_topic_model:
+                type: string
+            summary_prompt_model:
+                type: string
             summary_persona:
                 type: text
             summary_format:

@@ -56,7 +56,7 @@ data:
       view:
       - data-auditor
     fields:
-      external_id:
+      summary_topic_model:
         type: '@django.CharField'
         options:
           'null': true
@@ -89,25 +89,33 @@ data:
           editable: true
           primary_key: false
           system: false
-      team_projects:
-        type: '@django.ManyToManyField'
-        relation: team_project
-        color: relation
-        options:
-          blank: true
-          related_name: +
-      summary_format:
-        type: '@django.TextField'
+      external_id:
+        type: '@django.CharField'
         options:
           'null': true
           default: null
+          choices: null
+          max_length: 256
           editable: true
+          primary_key: false
           system: false
-      top_p:
-        type: '@django.FloatField'
+      summary_model:
+        type: '@django.CharField'
         options:
           'null': true
           default: null
+          choices: null
+          max_length: 256
+          editable: true
+          primary_key: false
+          system: false
+      summary_prompt_model:
+        type: '@django.CharField'
+        options:
+          'null': true
+          default: null
+          choices: null
+          max_length: 256
           editable: true
           primary_key: false
           system: false
@@ -117,13 +125,25 @@ data:
         options:
           editable: true
           system: false
-      summary_model:
-        type: '@django.CharField'
+      summary_format:
+        type: '@django.TextField'
         options:
           'null': true
           default: null
-          choices: null
-          max_length: 256
+          editable: true
+          system: false
+      team_projects:
+        type: '@django.ManyToManyField'
+        relation: team_project
+        color: relation
+        options:
+          blank: true
+          related_name: +
+      top_p:
+        type: '@django.FloatField'
+        options:
+          'null': true
+          default: null
           editable: true
           primary_key: false
           system: false

@@ -78,6 +78,12 @@ data:
           default: null
           editable: true
           system: false
+      topics:
+        type: '@zimagi.DictionaryField'
+        color: json
+        options:
+          editable: true
+          system: false
       sentences:
         type: '@zimagi.ListField'
         color: json
@@ -103,12 +109,6 @@ data:
           max_length: 256
           editable: true
           primary_key: false
-          system: false
-      topics:
-        type: '@zimagi.DictionaryField'
-        color: json
-        options:
-          editable: true
           system: false
     meta:
       unique_together:
