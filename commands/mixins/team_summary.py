@@ -9,6 +9,7 @@ from utility.data import Collection, get_identifier, ensure_list
 from utility.topics import TopicModel
 
 import time
+import re
 
 
 class TeamSummaryCommandMixin(CommandMixin("team_summary")):
@@ -65,10 +66,11 @@ class TeamSummaryCommandMixin(CommandMixin("team_summary")):
             },
         )
         if self._store_document_topics(document, topic_parser):
-            self.data(
-                "Document {} topics".format(self.key_color(document.id)),
-                document.topics,
-            )
+            if self.debug and self.verbosity > 2:
+                self.data(
+                    "Document {} topics".format(self.key_color(document.id)),
+                    document.topics,
+                )
 
         self._store_document_embeddings(document, topic_parser)
 
@@ -108,7 +110,10 @@ class TeamSummaryCommandMixin(CommandMixin("team_summary")):
         sentence_limit=100,
     ):
         start_time = time.time()
+
         documents = self._get_summary_documents(project)
+        included_documents = {}
+
         config = {
             "persona": project.summary_persona,
             "temperature": project.temperature,
@@ -116,85 +121,55 @@ class TeamSummaryCommandMixin(CommandMixin("team_summary")):
             "repetition_penalty": project.repetition_penalty,
         }
 
-        request_tokens = 0
-        response_tokens = 0
-        processing_cost = 0
-        included_documents = {}
-        summaries = []
-
-        topics = [
-            {
-                "prompt": """
-Generate a detailed prompt to summarize a collection of documents that may or may not have information pertaining to the question in the text excerpt. Include only the prompt in the response.
-""".strip(),
-                "instances": documents,
-                "method": self._summarize_documents,
-            }
-        ]
-
         if use_default_format:
             output_format = "{}. {}".format(
                 project.summary_format.removesuffix("."),
                 output_format.removesuffix("."),
             )
 
-        if self.debug:
+        if self.debug and self.verbosity > 2:
             self.info("======================")
             self.data("Team", project.team)
             self.data("Project", project)
             self.data("Output Format", output_format)
             self.data("Summary Documents", documents)
 
-        def summarize_topic(topic_info):
-            return self._summarize_topic(
-                project,
-                prompt,
-                topic_info["prompt"],
-                topic_info["instances"],
-                topic_info["method"],
-                max_sections,
-                sentence_limit,
-                config,
-            )
-
-        topic_results = self.run_list(topics, summarize_topic)
-        for topic in topic_results.data:
-            request_tokens += topic.result.request_tokens
-            response_tokens += topic.result.response_tokens
-            processing_cost += topic.result.processing_cost
-
-            for summary in topic.result.summaries:
-                for identifier, document_info in summary.documents.items():
-                    score = document_info["score"]
-                    document = document_info["document"]
-
-                    included_documents[identifier] = {
-                        "score": float(score),
-                        "type": document.type,
-                        "document_id": document.external_id,
-                    }
-            summaries.extend(topic.result.summaries)
-
-        topic_text = (
-            "\n\n\n".join([summary.text for summary in summaries]).strip()
-            if summaries
-            else ""
+        topic_summary = self._summarize_topic(
+            project,
+            prompt,
+            documents,
+            max_sections,
+            sentence_limit,
+            config,
         )
-        if not topic_text and documents and len(documents) > 2:
-            topic_text = None
+        for summary in topic_summary.summaries:
+            for identifier, document_info in summary.documents.items():
+                score = document_info["score"]
+                document = document_info["document"]
 
-        if self.debug:
-            self.data("Summary Topic Text", topic_text)
+                included_documents[identifier] = {
+                    "score": float(score),
+                    "type": document.type,
+                    "document_id": document.external_id,
+                }
+
+        topic_texts = [summary.text.strip() for summary in topic_summary.summaries]
+        if not topic_texts and documents and len(documents) > 2:
+            topic_texts = None
+
+        if self.debug and self.verbosity > 2:
+            self.data("Summary Topic Text", topic_texts)
             self.data("Summary Included Documents", included_documents)
 
         summary = TextSummarizer(
-            self, topic_text, provider=project.summary_model
+            self, topic_texts, provider=project.summary_model
         ).generate(
             prompt, output_format=output_format, output_endings=output_endings, **config
         )
-        summary.request_tokens += request_tokens
-        summary.response_tokens += response_tokens
-        summary.processing_cost += processing_cost
+
+        summary.request_tokens += topic_summary.request_tokens
+        summary.response_tokens += topic_summary.response_tokens
+        summary.processing_cost += topic_summary.processing_cost
         summary.processing_time = time.time() - start_time
         summary.documents = included_documents
         return summary
@@ -203,10 +178,8 @@ Generate a detailed prompt to summarize a collection of documents that may or ma
         self,
         project,
         user_prompt,
-        detail_prompt,
         instances,
-        summarize_method,
-        max_chunks,
+        max_sections,
         sentence_limit,
         config,
     ):
@@ -224,20 +197,14 @@ Generate a detailed prompt to summarize a collection of documents that may or ma
         )
 
         if instances:
-            research_prompt = TextSummarizer(
-                self, user_prompt, provider=model
-            ).generate(detail_prompt, **config)
-            request_tokens += research_prompt.request_tokens
-            response_tokens += research_prompt.response_tokens
-            processing_cost += research_prompt.processing_cost
-
+            topic_prompt = "Summarize the document text for inclusion into a higher level summary on the topic."
             summary_results = self.run_list(
                 instances,
-                summarize_method,
+                self._summarize_documents,
                 project,
-                research_prompt.text,
+                topic_prompt,
                 user_prompt,
-                max_chunks,
+                max_sections,
                 sentence_limit,
                 config,
             )
@@ -263,7 +230,7 @@ Generate a detailed prompt to summarize a collection of documents that may or ma
         project,
         prompt,
         user_prompt,
-        max_chunks,
+        max_sections,
         sentence_limit,
         config,
     ):
@@ -281,7 +248,7 @@ Generate a detailed prompt to summarize a collection of documents that may or ma
             ).generate(
                 prompt,
                 user_prompt=user_prompt,
-                max_chunks=max_chunks,
+                max_chunks=max_sections,
                 sentence_limit=sentence_limit,
                 **config
             )
@@ -289,7 +256,7 @@ Generate a detailed prompt to summarize a collection of documents that may or ma
                 summary.text = """
 The following is information from the document collection '{}'{}
 
-Use this information exclusively for summarization and answering questions:
+Use the following information for summarization and answering questions:
 
 {}
 """.format(
