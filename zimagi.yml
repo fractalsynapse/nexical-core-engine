@@ -4,14 +4,14 @@ version: 0.0.1
 compatibility: ">=0.13.0,<0.14"
 
 modules:
-    - provider: github
-      remote: fractalsynapse/zimagi-ml
+    - provider: git
+      remote: https://github.com/fractalsynapse/zimagi-ml.git
       reference: main
 
-    - provider: github
-      remote: fractalsynapse/zimagi-portal
+    - provider: git
+      remote: https://github.com/fractalsynapse/zimagi-portal.git
       reference: main
 
-    - provider: github
-      remote: fractalsynapse/zimagi-browser
+    - provider: git
+      remote: https://github.com/fractalsynapse/zimagi-browser.git
       reference: main
