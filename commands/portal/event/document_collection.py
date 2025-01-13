@@ -17,13 +17,9 @@ class DocumentCollection(Command("portal.event.document_collection")):
             self.delete_document_collection(event, self.portal)
             self.send("agent:documents:delete", event.export())
             self.success(
-                "Successfully deleted document collection: {}".format(
-                    event.document_collection_id
-                )
+                "Successfully deleted document collection: {}".format(event.id)
             )
         else:
             self.save_document_collection(event, self.portal)
             self.send("agent:documents:update", event.export())
-            self.success(
-                "Updated document collection: {}".format(event.document_collection_id)
-            )
+            self.success("Updated document collection: {}".format(event.id))
